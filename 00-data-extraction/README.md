@@ -250,9 +250,9 @@ If you use this pipeline in your research, please cite:
 ```bibtex
 @software{zinc22_extraction,
   title = {ZINC22 SMILES Extraction Pipeline},
-  author = {Your Name},
+  author = {Tensorlong},
   year = {2025},
-  url = {https://github.com/yourusername/ai-hit-to-lead}
+  url = {https://github.com/Yellow4Submarine7/ai-hit-to-lead}
 }
 ```
 

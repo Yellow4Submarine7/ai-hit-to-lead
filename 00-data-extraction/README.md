@@ -38,7 +38,7 @@ uv pip install openbabel-wheel
 
 1. **Clone this repository**
 ```bash
-git clone https://github.com/yourusername/ai-hit-to-lead.git
+git clone https://github.com/Yellow4Submarine7/ai-hit-to-lead.git
 cd ai-hit-to-lead/00-data-extraction
 ```
 

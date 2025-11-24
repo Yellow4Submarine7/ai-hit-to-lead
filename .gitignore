@@ -1,0 +1,48 @@
+# Data files
+*.tgz
+*.pdbqt
+*.csv
+*.smi
+*.gz
+
+# Data directories
+zinc22/
+data/
+outputs/
+logs/
+
+# Runtime files
+*.log
+progress.json
+*.o[0-9]*
+*.e[0-9]*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.Python
+build/
+dist/
+
+# Local configuration (not tracked)
+.claude/
+CLAUDE.md
+
+# OS
+.DS_Store
+*.swp
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Temporary files
+tmp/
+temp/
+*.tmp

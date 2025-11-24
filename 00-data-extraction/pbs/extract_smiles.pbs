@@ -1,0 +1,40 @@
+#!/bin/bash
+#PBS -N zinc22_smiles_full
+#PBS -l select=1:ncpus=16:mem=32gb
+#PBS -l walltime=12:00:00
+#PBS -q short
+#PBS -j oe
+#PBS -k oe
+
+cd "$PBS_O_WORKDIR"
+
+echo "=== ZINC22 Full SMILES Extraction Started ==="
+echo "Start time: $(date)"
+echo "Hostname: $(hostname)"
+echo "Working directory: $(pwd)"
+echo ""
+
+# CRITICAL: Use uv run for Python execution
+uv run python extract_smiles_openbabel.py \
+  --input_dir /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400 \
+  --output_csv /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles.csv \
+  --error_log /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/logs/errors.log \
+  --progress_file /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/logs/progress.json \
+  --ncpus 16 \
+  --resume
+
+EXIT_CODE=$?
+
+echo ""
+echo "=== ZINC22 Full SMILES Extraction Completed ==="
+echo "End time: $(date)"
+echo "Exit code: $EXIT_CODE"
+
+# Show final statistics
+if [ -f /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles_summary.txt ]; then
+    echo ""
+    echo "=== Summary ==="
+    cat /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles_summary.txt
+fi
+
+exit $EXIT_CODE

@@ -125,9 +125,10 @@ def process_tgz_file(tgz_path, output_csv, max_molecules=None):
     return results, errors
 
 def main():
-    # Configuration
-    test_tgz = "/data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/zinc22/zinc-22s/H29/H29P380/a/H29P380-N-saj.pdbqt.tgz"
-    output_csv = "/data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/test_openbabel.csv"
+    # Configuration - use relative paths
+    # Users should run from the 00-data-extraction directory
+    test_tgz = "./data/zinc22/zinc-22s/H29/H29P380/a/H29P380-N-saj.pdbqt.tgz"
+    output_csv = "./outputs/test_openbabel.csv"
 
     print("="*60)
     print("ZINC22 PDBQT to SMILES - Open Babel Version")
@@ -141,7 +142,7 @@ def main():
         print(f"ERROR: Test file not found: {test_tgz}")
         print("\nSearching for alternative test file...")
         # Try to find any .tgz file
-        base_dir = Path("/data/petretto/home/tiesunlong/zinc22_H27-29_P300-400")
+        base_dir = Path("./data")
         tgz_files = list(base_dir.rglob("*.tgz"))
         if tgz_files:
             test_tgz = str(tgz_files[0])

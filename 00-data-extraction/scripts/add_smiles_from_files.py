@@ -13,11 +13,12 @@ from pathlib import Path
 from collections import defaultdict
 import time
 
-# Configuration
-BASE_DIR = "/data/petretto/home/tiesunlong/docking_zinc22_H27-29_P300-400"
+# Configuration - use relative paths
+# Run from the 00-data-extraction directory
+BASE_DIR = "./data"
 SMILES_DIR = Path(BASE_DIR) / "smiles_2d"
-INPUT_CSV = Path(BASE_DIR) / "zinc22_catalog_complete.csv"
-OUTPUT_CSV = Path(BASE_DIR) / "zinc22_catalog_with_smiles.csv"
+INPUT_CSV = Path("./outputs") / "zinc22_catalog_complete.csv"
+OUTPUT_CSV = Path("./outputs") / "zinc22_catalog_with_smiles.csv"
 
 def build_smiles_lookup(smiles_dir):
     """

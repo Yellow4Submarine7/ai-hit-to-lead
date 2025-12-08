@@ -3,11 +3,15 @@
 # ZINC22 Fixed Download Script - Execute wget commands line by line
 # Date: 2025-11-21
 
-BASE_DIR="/data/petretto/home/tiesunlong/docking_zinc22_H27-29_P300-400"
-DOWNLOAD_DIR="$BASE_DIR/downloads"
+# Configuration - use relative paths
+# Run from the 00-data-extraction directory
+BASE_DIR="."
+DOWNLOAD_DIR="$BASE_DIR/data/zinc22"
 LOG_DIR="$BASE_DIR/logs"
-WGET_SCRIPT="/data/petretto/home/tiesunlong/ZINC22-downloader-3D-pdbqt-fixed.wget"
+WGET_SCRIPT="${1:-./ZINC22-downloader.wget}"
 
+mkdir -p "$DOWNLOAD_DIR"
+mkdir -p "$LOG_DIR"
 cd "$DOWNLOAD_DIR"
 
 # Initialize logs
@@ -23,7 +27,7 @@ SUCCESS_COUNT=0
 FAILED_COUNT=0
 
 echo "============================================"
-echo "ZINC22 Fixed Download -补全缺失文件"
+echo "ZINC22 Fixed Download - Retry missing files"
 echo "============================================"
 echo "Total commands: $TOTAL_LINES"
 echo "Download directory: $DOWNLOAD_DIR"

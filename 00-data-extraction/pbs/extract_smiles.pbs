@@ -15,11 +15,11 @@ echo "Working directory: $(pwd)"
 echo ""
 
 # CRITICAL: Use uv run for Python execution
-uv run python extract_smiles_openbabel.py \
-  --input_dir /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400 \
-  --output_csv /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles.csv \
-  --error_log /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/logs/errors.log \
-  --progress_file /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/logs/progress.json \
+uv run python scripts/extract_smiles_openbabel.py \
+  --input_dir ./data \
+  --output_csv ./outputs/zinc22_smiles.csv \
+  --error_log ./logs/errors.log \
+  --progress_file ./logs/progress.json \
   --ncpus 16 \
   --resume
 
@@ -31,10 +31,10 @@ echo "End time: $(date)"
 echo "Exit code: $EXIT_CODE"
 
 # Show final statistics
-if [ -f /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles_summary.txt ]; then
+if [ -f ./outputs/zinc22_smiles_summary.txt ]; then
     echo ""
     echo "=== Summary ==="
-    cat /data/petretto/home/tiesunlong/zinc22_H27-29_P300-400/outputs/zinc22_smiles_summary.txt
+    cat ./outputs/zinc22_smiles_summary.txt
 fi
 
 exit $EXIT_CODE

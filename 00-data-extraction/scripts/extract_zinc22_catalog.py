@@ -14,10 +14,11 @@ from collections import defaultdict
 from pathlib import Path
 import time
 
-# Configuration
-BASE_DIR = "/data/petretto/home/tiesunlong/docking_zinc22_H27-29_P300-400"
-DOWNLOADS_DIR = os.path.join(BASE_DIR, "downloads")
-OUTPUT_DIR = BASE_DIR
+# Configuration - use relative paths
+# Run from the 00-data-extraction directory
+BASE_DIR = "./data"
+DOWNLOADS_DIR = os.path.join(BASE_DIR, "zinc22")
+OUTPUT_DIR = "./outputs"
 
 def parse_pdbqt_filename(filepath):
     """

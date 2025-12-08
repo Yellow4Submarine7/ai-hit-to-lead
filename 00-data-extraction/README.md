@@ -51,22 +51,24 @@ uv pip install -r ../requirements.txt
 
 ### Step 1: Download ZINC22 Files
 
-1. **Obtain wget script** from ZINC22 database:
-   - Visit https://zinc.docking.org/
-   - Navigate to 3D structures section
-   - Generate wget script for H27-H29, P300-400 range
+1. **Obtain wget script** from ZINC22 3D Tranches:
+   - Visit https://cartblanche.docking.org/tranches/3d
+   - Select your target tranches (e.g., H27-H29, P300-400)
+   - Format: **AutoDock**
+   - Method: **WGET**
+   - Click "Download" to get the wget script
 
-2. **Submit download job**:
+2. **Run download on login node** (compute nodes cannot access internet):
 ```bash
-# Edit pbs/download_zinc22.pbs to set correct paths
-qsub pbs/download_zinc22.pbs
+# Create data directory
+mkdir -p data/zinc22
+
+# Run wget script directly on login node
+cd data/zinc22
+bash /path/to/your/ZINC22-downloader.wget
 ```
 
-3. **Monitor download**:
-```bash
-qstat -u $USER
-tail -f download_zinc22.o*
-```
+**Note**: Download must be executed on the login node as PBS compute nodes do not have internet access.
 
 Expected download time: ~2 hours
 Expected download size: ~6.8 GB (2,141 files)
@@ -151,10 +153,10 @@ If the extraction job is interrupted, you can resume:
 ```bash
 # The --resume flag will skip already processed files
 uv run python scripts/extract_smiles_openbabel.py \
-  --input_dir /path/to/zinc22_H27-29_P300-400 \
-  --output_csv outputs/zinc22_smiles.csv \
-  --error_log logs/errors.log \
-  --progress_file logs/progress.json \
+  --input_dir ./data \
+  --output_csv ./outputs/zinc22_smiles.csv \
+  --error_log ./logs/errors.log \
+  --progress_file ./logs/progress.json \
   --ncpus 16 \
   --resume
 ```
@@ -164,11 +166,8 @@ uv run python scripts/extract_smiles_openbabel.py \
 If some files failed to download:
 
 ```bash
-# Generate retry script
-./utils/zinc_retry_download.sh
-
-# Submit retry job
-qsub pbs/retry_download.pbs
+# Use the retry download script on login node
+./utils/zinc_retry_download.sh /path/to/failed_urls.txt
 ```
 
 ### Alternative Methods
@@ -223,17 +222,15 @@ qstat -f <job_id>
 00-data-extraction/
 ├── scripts/
 │   ├── extract_smiles_openbabel.py    # Main extraction script
-│   ├── test_openbabel_parser.py        # Testing/validation
-│   ├── extract_zinc22_catalog.py       # Catalog generation
-│   ├── add_smiles_via_api.py           # API alternative
-│   └── add_smiles_from_files.py        # File-based alternative
+│   ├── test_openbabel_parser.py       # Testing/validation
+│   ├── extract_zinc22_catalog.py      # Catalog generation
+│   ├── add_smiles_via_api.py          # API alternative
+│   └── add_smiles_from_files.py       # File-based alternative
 ├── pbs/
-│   ├── download_zinc22.pbs             # Download job script
-│   ├── extract_smiles.pbs              # Extraction job script
-│   └── retry_download.pbs              # Retry failed downloads
+│   └── extract_smiles.pbs             # Extraction job script
 └── utils/
-    ├── run_wget_fixed.sh               # Wget execution helper
-    └── zinc_retry_download.sh          # Generate retry commands
+    ├── run_wget_fixed.sh              # Wget execution helper
+    └── zinc_retry_download.sh         # Retry failed downloads
 ```
 
 ## Performance Benchmarks

@@ -13,8 +13,9 @@ import requests
 from pathlib import Path
 from collections import defaultdict
 
-# Configuration
-BASE_DIR = "/data/petretto/home/tiesunlong/docking_zinc22_H27-29_P300-400"
+# Configuration - use relative paths
+# Run from the 00-data-extraction directory
+BASE_DIR = "./outputs"
 INPUT_CSV = Path(BASE_DIR) / "zinc22_catalog_complete.csv"
 OUTPUT_CSV = Path(BASE_DIR) / "zinc22_catalog_with_smiles.csv"
 CHECKPOINT_FILE = Path(BASE_DIR) / "smiles_api_checkpoint.json"

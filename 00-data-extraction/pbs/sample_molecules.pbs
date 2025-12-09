@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N sample_molecules
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=00:30:00
+#PBS -q short
+#PBS -j oe
+
+# ===== CONFIGURATION - MODIFY THESE =====
+DATASET_NAME="zinc22"
+INPUT_CSV="./outputs/${DATASET_NAME}_smiles.csv"
+OUTPUT_CSV="./outputs/${DATASET_NAME}_sampled.csv"
+SAMPLE_SIZE=1000000
+SEED=42
+# ========================================
+
+cd "$PBS_O_WORKDIR"
+
+echo "=========================================="
+echo "Sample Molecules from SMILES CSV"
+echo "Job ID: $PBS_JOBID"
+echo "Started at: $(date)"
+echo "=========================================="
+echo "Dataset: $DATASET_NAME"
+echo "Input: $INPUT_CSV"
+echo "Output: $OUTPUT_CSV"
+echo "Sample size: $SAMPLE_SIZE"
+echo "Random seed: $SEED"
+echo ""
+
+TOTAL=$(wc -l < "$INPUT_CSV")
+echo "Total molecules in source: $TOTAL"
+echo ""
+
+# Skip header row, random sample
+echo "Sampling $SAMPLE_SIZE molecules..."
+tail -n +2 "$INPUT_CSV" | shuf --random-source=<(yes $SEED) -n $SAMPLE_SIZE > "${OUTPUT_CSV%.csv}_nohdr.csv"
+
+# Add header
+head -1 "$INPUT_CSV" > "$OUTPUT_CSV"
+cat "${OUTPUT_CSV%.csv}_nohdr.csv" >> "$OUTPUT_CSV"
+rm "${OUTPUT_CSV%.csv}_nohdr.csv"
+
+SAMPLED=$(wc -l < "$OUTPUT_CSV")
+echo ""
+echo "=========================================="
+echo "Sampling Complete"
+echo "=========================================="
+echo "Output: $OUTPUT_CSV"
+echo "Lines: $SAMPLED (including header)"
+echo ""
+echo "Sample (first 3 lines):"
+head -4 "$OUTPUT_CSV"
+echo ""
+echo "Completed at: $(date)"

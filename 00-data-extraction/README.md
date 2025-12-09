@@ -1,14 +1,28 @@
 # ZINC22 Data Extraction
 
-Download ZINC22 3D PDBQT files and extract SMILES strings for drug discovery applications.
+Download ZINC22 3D PDBQT files, extract SMILES strings, sample molecules, and prepare ligand files for docking.
 
 ## Overview
 
-This pipeline downloads ZINC22 3D structures in PDBQT format and converts them to SMILES strings using Open Babel. The dataset covers molecules with:
-- **Heavy atoms**: 27-29 (H27-H29)
-- **LogP**: 300-400 (P300-400)
+This pipeline downloads ZINC22 3D structures in PDBQT format and processes them through multiple steps:
+1. Download .tgz archives from ZINC22
+2. Test extraction on sample data
+3. Extract SMILES strings from all PDBQT files
+4. Sample a subset of molecules for docking
+5. Extract PDBQT files for sampled molecules
 
-### Results
+### Configuration
+
+All PBS scripts use a configuration variable at the top:
+```bash
+# ===== CONFIGURATION - MODIFY THESE =====
+DATASET_NAME="zinc22"
+# ========================================
+```
+
+Change `DATASET_NAME` to match your dataset. Output files will be named `${DATASET_NAME}_smiles.csv`, `${DATASET_NAME}_sampled.csv`, etc.
+
+### Example Results (zinc22 H27-H29 P300-400)
 
 - **2,141** .tgz archive files downloaded
 - **9,297,704** molecules successfully extracted
@@ -19,8 +33,8 @@ This pipeline downloads ZINC22 3D structures in PDBQT format and converts them t
 
 ### HPC Environment
 - PBS/Torque job scheduler
-- 16 CPU cores recommended
-- 32 GB RAM minimum
+- 16-48 CPU cores recommended
+- 32-64 GB RAM minimum
 
 ### Software Requirements
 ```bash
@@ -30,8 +44,11 @@ python --version
 # UV package manager (https://docs.astral.sh/uv/)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Open Babel
+# Open Babel (for SMILES extraction)
 uv pip install openbabel-wheel
+
+# Pandas (for PDBQT extraction)
+uv pip install pandas
 ```
 
 ## Installation
@@ -89,72 +106,156 @@ Expected output:
 
 ### Step 3: Full SMILES Extraction
 
-1. **Submit extraction job**:
+1. **Configure the job**:
 ```bash
-# Edit pbs/extract_smiles.pbs to set correct paths
+# Edit pbs/extract_smiles.pbs
+# Set DATASET_NAME at the top of the file
+```
+
+2. **Submit extraction job**:
+```bash
 qsub pbs/extract_smiles.pbs
 ```
 
-2. **Monitor progress**:
+3. **Monitor progress**:
 ```bash
 qstat -u $USER
-tail -f extract_smiles.o*
+tail -f smiles_extraction.o*
 
 # Check progress file (updates every 10 files)
 cat logs/progress.json
 ```
 
-3. **Job parameters**:
+4. **Job parameters**:
    - **CPU cores**: 16
    - **Memory**: 32 GB
    - **Walltime**: 12 hours (typically finishes in <10 minutes)
    - **Queue**: short
 
-### Step 4: Verify Results
+**Output**: `outputs/${DATASET_NAME}_smiles.csv`
+
+### Step 4: Sample Molecules
+
+Sample a subset of molecules for docking (e.g., 1 million):
+
+1. **Configure the job**:
+```bash
+# Edit pbs/sample_molecules.pbs
+# Set DATASET_NAME and SAMPLE_SIZE
+```
+
+2. **Submit sampling job**:
+```bash
+qsub pbs/sample_molecules.pbs
+```
+
+3. **Job parameters**:
+   - **CPU cores**: 4
+   - **Memory**: 16 GB
+   - **Walltime**: 30 minutes
+   - **Queue**: short
+
+**Output**: `outputs/${DATASET_NAME}_sampled.csv`
+
+### Step 5: Extract PDBQT Files
+
+Extract 3D structure files for sampled molecules:
+
+1. **Configure the job**:
+```bash
+# Edit pbs/extract_pdbqt.pbs
+# Set DATASET_NAME and DATA_ROOT
+```
+
+2. **Submit extraction job**:
+```bash
+qsub pbs/extract_pdbqt.pbs
+```
+
+3. **Monitor progress**:
+```bash
+qstat -u $USER
+tail -f logs/extract_pdbqt.log
+```
+
+4. **Job parameters**:
+   - **CPU cores**: 48
+   - **Memory**: 64 GB
+   - **Walltime**: 3 hours
+   - **Queue**: long
+
+**Performance**: ~350 molecules/second with 48 cores (~47 minutes for 1M molecules)
+
+**Output**:
+- `ligands/*.pdbqt` - Individual PDBQT files
+- `outputs/ligand_files.txt` - List of all extracted files (for docking)
+
+### Step 6: Verify Results
 
 ```bash
-# Check output file
-ls -lh outputs/zinc22_H27-H29_P300-400_smiles.csv
+# Check SMILES output
+ls -lh outputs/${DATASET_NAME}_smiles.csv
+head -5 outputs/${DATASET_NAME}_smiles.csv
 
-# View summary
-cat outputs/zinc22_H27-H29_P300-400_smiles_summary.txt
+# Check sampled output
+wc -l outputs/${DATASET_NAME}_sampled.csv
 
-# Check first few rows
-head -10 outputs/zinc22_H27-H29_P300-400_smiles.csv
+# Check extracted PDBQT files
+ls ligands/ | wc -l
+wc -l outputs/ligand_files.txt
 ```
 
 ## Output Format
 
-### CSV Structure
+### SMILES CSV Structure
 ```csv
 zinc_id,smiles,pdbqt_path
-ZINCrB000001FZto.0,C1(=[C]C(=[C][C]=C1OC(F)(F)F)...,zinc22_H27-29.../H27P310-K-aaaaaa.pdbqt.tgz:H27/...
+ZINCrB000001FZto.0,C1(=[C]C(=[C][C]=C1OC(F)(F)F)...,data/zinc22/H27P310-K-aaaaaa.pdbqt.tgz:H27/...
 ```
 
 **Columns**:
 - `zinc_id`: ZINC database identifier with conformer number
 - `smiles`: Canonical SMILES string
-- `pdbqt_path`: Path to 3D structure file (.tgz:internal_path)
+- `pdbqt_path`: Path to 3D structure file (tgz_path:internal_path)
 
-### Statistics File
-The summary file includes:
-- Total .tgz files processed
-- Total molecules extracted
-- Success rate percentage
-- Error count
-- Processing timestamp
+### Ligand Files List
+```
+./ligands/ZINCrB000001FZto.pdbqt
+./ligands/ZINCrB000002ABcd.pdbqt
+...
+```
+
+This file is used as input for Uni-Dock's `--ligand_index` parameter.
+
+## File Organization
+
+```
+00-data-extraction/
+├── scripts/
+│   ├── extract_smiles_openbabel.py    # SMILES extraction (Step 3)
+│   ├── extract_pdbqt.py               # PDBQT extraction (Step 5)
+│   ├── test_openbabel_parser.py       # Testing/validation (Step 2)
+│   ├── extract_zinc22_catalog.py      # Catalog generation
+│   ├── add_smiles_via_api.py          # API alternative
+│   └── add_smiles_from_files.py       # File-based alternative
+├── pbs/
+│   ├── extract_smiles.pbs             # SMILES extraction job (Step 3)
+│   ├── sample_molecules.pbs           # Sampling job (Step 4)
+│   └── extract_pdbqt.pbs              # PDBQT extraction job (Step 5)
+└── utils/
+    ├── run_wget_fixed.sh              # Wget execution helper
+    └── zinc_retry_download.sh         # Retry failed downloads
+```
 
 ## Advanced Usage
 
-### Resume Interrupted Job
-
-If the extraction job is interrupted, you can resume:
+### Resume Interrupted SMILES Extraction
 
 ```bash
 # The --resume flag will skip already processed files
 uv run python scripts/extract_smiles_openbabel.py \
   --input_dir ./data \
-  --output_csv ./outputs/zinc22_smiles.csv \
+  --output_csv ./outputs/${DATASET_NAME}_smiles.csv \
   --error_log ./logs/errors.log \
   --progress_file ./logs/progress.json \
   --ncpus 16 \
@@ -163,14 +264,12 @@ uv run python scripts/extract_smiles_openbabel.py \
 
 ### Retry Failed Downloads
 
-If some files failed to download:
-
 ```bash
 # Use the retry download script on login node
 ./utils/zinc_retry_download.sh /path/to/failed_urls.txt
 ```
 
-### Alternative Methods
+### Alternative SMILES Methods
 
 #### API-based SMILES Extraction
 ```bash
@@ -211,34 +310,28 @@ qstat -f <job_id>
   - Insufficient memory: Increase memory in PBS script
   - Invalid PDBQT format: Report to ZINC database
 
-### Issue: Slow processing
-- Increase CPU cores in PBS script (up to 32)
+### Issue: Slow PDBQT extraction
+- Increase CPU cores (up to 50 in long queue)
 - Use faster storage (SSD vs HDD)
-- Split processing across multiple nodes
-
-## File Organization
-
-```
-00-data-extraction/
-├── scripts/
-│   ├── extract_smiles_openbabel.py    # Main extraction script
-│   ├── test_openbabel_parser.py       # Testing/validation
-│   ├── extract_zinc22_catalog.py      # Catalog generation
-│   ├── add_smiles_via_api.py          # API alternative
-│   └── add_smiles_from_files.py       # File-based alternative
-├── pbs/
-│   └── extract_smiles.pbs             # Extraction job script
-└── utils/
-    ├── run_wget_fixed.sh              # Wget execution helper
-    └── zinc_retry_download.sh         # Retry failed downloads
-```
+- Check disk I/O bottleneck
 
 ## Performance Benchmarks
 
-- **Download speed**: ~50 MB/min (depends on network)
-- **Extraction speed**: ~1,000,000 molecules per minute (16 cores)
-- **Memory usage**: ~2 GB per worker process
-- **Disk I/O**: Sequential read, minimal random access
+| Step | Speed | Resources |
+|------|-------|-----------|
+| Download | ~50 MB/min | Network dependent |
+| SMILES extraction | ~1M mol/min | 16 cores |
+| Sampling | ~1M mol/min | 4 cores |
+| PDBQT extraction | ~350 mol/s | 48 cores |
+
+## Next Steps
+
+After completing all steps, you will have:
+- `outputs/${DATASET_NAME}_sampled.csv` - Sampled molecules with SMILES
+- `ligands/*.pdbqt` - 3D structure files
+- `outputs/ligand_files.txt` - Ligand list for docking
+
+These outputs are ready for the next stage: **01-docking** (Uni-Dock molecular docking).
 
 ## Citation
 
@@ -246,7 +339,7 @@ If you use this pipeline in your research, please cite:
 
 ```bibtex
 @software{zinc22_extraction,
-  title = {ZINC22 SMILES Extraction Pipeline},
+  title = {ZINC22 Data Extraction Pipeline},
   author = {Tensorlong},
   year = {2025},
   url = {https://github.com/Yellow4Submarine7/ai-hit-to-lead}

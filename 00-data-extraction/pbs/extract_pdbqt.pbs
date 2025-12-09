@@ -1,0 +1,55 @@
+#!/bin/bash
+#PBS -N extract_pdbqt
+#PBS -l select=1:ncpus=48:mem=64gb
+#PBS -l walltime=03:00:00
+#PBS -q long
+#PBS -j oe
+
+# ===== CONFIGURATION - MODIFY THESE =====
+DATASET_NAME="zinc22"
+INPUT_CSV="./outputs/${DATASET_NAME}_sampled.csv"
+DATA_ROOT="./data"
+OUTPUT_DIR="./ligands"
+LIGAND_LIST="./outputs/ligand_files.txt"
+# ========================================
+
+cd "$PBS_O_WORKDIR"
+
+echo "=========================================="
+echo "Extract PDBQT Files - PARALLEL"
+echo "Job ID: $PBS_JOBID"
+echo "Started at: $(date)"
+echo "Hostname: $(hostname)"
+echo "=========================================="
+echo "Dataset: $DATASET_NAME"
+echo "Input: $INPUT_CSV"
+echo "Data root: $DATA_ROOT"
+echo "Output: $OUTPUT_DIR"
+echo "CPUs: 48"
+echo ""
+
+mkdir -p "$OUTPUT_DIR"
+mkdir -p ./logs
+
+uv run python scripts/extract_pdbqt.py \
+  --input "$INPUT_CSV" \
+  --output_dir "$OUTPUT_DIR" \
+  --data_root "$DATA_ROOT" \
+  --ligand_list "$LIGAND_LIST" \
+  --ncpus 48 \
+  2>&1 | tee logs/extract_pdbqt.log
+
+EXIT_CODE=${PIPESTATUS[0]}
+
+echo ""
+echo "=========================================="
+echo "Completed with exit code: $EXIT_CODE"
+echo "End time: $(date)"
+echo "=========================================="
+
+if [ -f "$LIGAND_LIST" ]; then
+    echo "Ligand files: $(wc -l < "$LIGAND_LIST")"
+    du -sh "$OUTPUT_DIR"
+fi
+
+exit $EXIT_CODE

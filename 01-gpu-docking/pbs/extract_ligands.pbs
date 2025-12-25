@@ -1,0 +1,101 @@
+#!/bin/bash
+#PBS -N extract_ligands
+#PBS -l select=1:ncpus=48:mem=64gb
+#PBS -l walltime=08:00:00
+#PBS -q long
+#PBS -j oe
+
+# =============================================================================
+# Extract Ligand PDBQT Files from TGZ Archives
+# =============================================================================
+#
+# Extracts individual PDBQT files from ZINC22 tar.gz archives in parallel.
+# CPU-bound task, uses all available cores for maximum throughput.
+#
+# Expected performance: ~350 mol/s with 48 cores
+#
+# =============================================================================
+
+# ===== CONFIGURATION - MODIFY THESE =====
+PROJECT_DIR="/path/to/your/project"
+INPUT_CSV="${PROJECT_DIR}/data/sampled.csv"
+DATA_ROOT="${PROJECT_DIR}/data/zinc22"
+OUTPUT_DIR="${PROJECT_DIR}/ligands"
+LIGAND_LIST="${PROJECT_DIR}/data/ligand_list.txt"
+
+# Optional: Filter by subset (leave empty for all)
+SUBSET_FILTER=""
+
+# Number of parallel workers (match ncpus above)
+NCPUS=48
+
+# Resume from previous run (skip existing files)
+RESUME="--resume"
+# ========================================
+
+cd "$PBS_O_WORKDIR"
+
+echo "=============================================="
+echo "Ligand Extraction Job"
+echo "=============================================="
+echo "Start time: $(date)"
+echo "Node: $(hostname)"
+echo "Working dir: $(pwd)"
+echo ""
+echo "Configuration:"
+echo "  Input CSV: ${INPUT_CSV}"
+echo "  Data root: ${DATA_ROOT}"
+echo "  Output dir: ${OUTPUT_DIR}"
+echo "  Workers: ${NCPUS}"
+echo "=============================================="
+
+# Validate inputs
+if [ ! -f "${INPUT_CSV}" ]; then
+    echo "ERROR: Input CSV not found: ${INPUT_CSV}"
+    exit 1
+fi
+
+if [ ! -d "${DATA_ROOT}" ]; then
+    echo "ERROR: Data root not found: ${DATA_ROOT}"
+    exit 1
+fi
+
+# Build command
+CMD="uv run python scripts/extract_ligands.py \
+    --input-csv ${INPUT_CSV} \
+    --output-dir ${OUTPUT_DIR} \
+    --data-root ${DATA_ROOT} \
+    --ncpus ${NCPUS} \
+    --ligand-list ${LIGAND_LIST}"
+
+if [ -n "${SUBSET_FILTER}" ]; then
+    CMD="${CMD} --subset-filter ${SUBSET_FILTER}"
+fi
+
+if [ -n "${RESUME}" ]; then
+    CMD="${CMD} ${RESUME}"
+fi
+
+echo ""
+echo "Running: ${CMD}"
+echo ""
+
+# Execute
+eval ${CMD}
+EXIT_CODE=$?
+
+echo ""
+echo "=============================================="
+echo "Job Complete"
+echo "=============================================="
+echo "End time: $(date)"
+echo "Exit code: ${EXIT_CODE}"
+
+if [ ${EXIT_CODE} -eq 0 ]; then
+    echo "Output files:"
+    ls -lh ${OUTPUT_DIR}/*.pdbqt 2>/dev/null | head -5
+    echo "..."
+    echo "Total files: $(ls -1 ${OUTPUT_DIR}/*.pdbqt 2>/dev/null | wc -l)"
+fi
+
+exit ${EXIT_CODE}

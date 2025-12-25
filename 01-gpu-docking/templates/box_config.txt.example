@@ -1,0 +1,16 @@
+# Docking Box Configuration
+# Define the 3D search space for molecular docking
+# All values in Angstroms
+
+# Box center coordinates (from receptor binding site analysis)
+CENTER_X=-26.60
+CENTER_Y=0.48
+CENTER_Z=8.06
+
+# Box dimensions (should encompass binding pocket with ~4A margin)
+SIZE_X=24.60
+SIZE_Y=22.96
+SIZE_Z=17.83
+
+# Optional: Volume in cubic Angstroms (for reference)
+# VOLUME=10070.2

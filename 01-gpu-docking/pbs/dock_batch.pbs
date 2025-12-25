@@ -1,0 +1,124 @@
+#!/bin/bash
+#PBS -N dock_batch
+#PBS -l select=1:ncpus=24:ngpus=1:mem=250gb
+#PBS -l walltime=240:00:00
+#PBS -q gpu-h200
+#PBS -j oe
+
+# =============================================================================
+# GPU-Accelerated Molecular Docking with Uni-Dock
+# =============================================================================
+#
+# Performs virtual screening using Uni-Dock on NVIDIA H200 GPU.
+# Expected performance: ~16 mol/s (~59K mol/hour, ~1.4M mol/day)
+#
+# Queue options:
+#   gpu-h200     - H200 (141GB), up to 240h, 7 queued jobs
+#   gpu-h200-int - H200 (141GB), up to 24h, interactive
+#   gpu          - A100 (40GB), up to 240h (may be disabled)
+#
+# =============================================================================
+
+# ===== CONFIGURATION - MODIFY THESE =====
+PROJECT_DIR="/path/to/your/project"
+RECEPTOR="${PROJECT_DIR}/receptor.pdbqt"
+LIGAND_INDEX="${PROJECT_DIR}/data/ligand_list.txt"
+BOX_CONFIG="${PROJECT_DIR}/box_config.txt"
+OUTPUT_DIR="${PROJECT_DIR}/results"
+LOG_FILE="${PROJECT_DIR}/logs/docking.log"
+
+# Uni-Dock parameters
+NUM_MODES=9
+EXHAUSTIVENESS=8
+SEARCH_MODE="balance"  # balance, fast, or detail
+
+# Progress reporting interval (seconds)
+PROGRESS_INTERVAL=60
+# ========================================
+
+cd "$PBS_O_WORKDIR"
+
+echo "=============================================="
+echo "Uni-Dock GPU Docking Job"
+echo "=============================================="
+echo "Start time: $(date)"
+echo "Node: $(hostname)"
+echo "Working dir: $(pwd)"
+echo ""
+
+# Show GPU info
+echo "GPU Information:"
+nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+echo ""
+
+# Show configuration
+echo "Configuration:"
+echo "  Receptor: ${RECEPTOR}"
+echo "  Ligand index: ${LIGAND_INDEX}"
+echo "  Box config: ${BOX_CONFIG}"
+echo "  Output dir: ${OUTPUT_DIR}"
+echo "  Search mode: ${SEARCH_MODE}"
+echo "  Exhaustiveness: ${EXHAUSTIVENESS}"
+echo "=============================================="
+
+# Validate inputs
+if [ ! -f "${RECEPTOR}" ]; then
+    echo "ERROR: Receptor not found: ${RECEPTOR}"
+    exit 1
+fi
+
+if [ ! -f "${LIGAND_INDEX}" ]; then
+    echo "ERROR: Ligand index not found: ${LIGAND_INDEX}"
+    exit 1
+fi
+
+if [ ! -f "${BOX_CONFIG}" ]; then
+    echo "ERROR: Box config not found: ${BOX_CONFIG}"
+    exit 1
+fi
+
+# Create output directories
+mkdir -p "${OUTPUT_DIR}"
+mkdir -p "$(dirname ${LOG_FILE})"
+
+# Count ligands
+LIGAND_COUNT=$(wc -l < "${LIGAND_INDEX}")
+echo ""
+echo "Ligands to dock: ${LIGAND_COUNT}"
+echo ""
+
+# Estimate time (assuming ~16 mol/s on H200)
+ESTIMATED_HOURS=$(echo "scale=1; ${LIGAND_COUNT} / 16 / 3600" | bc)
+echo "Estimated time: ~${ESTIMATED_HOURS} hours (at 16 mol/s)"
+echo ""
+
+# Run docking with Python wrapper
+echo "Starting Uni-Dock..."
+echo ""
+
+uv run python scripts/run_docking.py \
+    --receptor "${RECEPTOR}" \
+    --ligand-index "${LIGAND_INDEX}" \
+    --output-dir "${OUTPUT_DIR}" \
+    --box-config "${BOX_CONFIG}" \
+    --num-modes ${NUM_MODES} \
+    --exhaustiveness ${EXHAUSTIVENESS} \
+    --search-mode ${SEARCH_MODE} \
+    --log-file "${LOG_FILE}" \
+    --progress-interval ${PROGRESS_INTERVAL}
+
+EXIT_CODE=$?
+
+echo ""
+echo "=============================================="
+echo "Job Complete"
+echo "=============================================="
+echo "End time: $(date)"
+echo "Exit code: ${EXIT_CODE}"
+
+if [ ${EXIT_CODE} -eq 0 ]; then
+    RESULT_COUNT=$(ls -1 ${OUTPUT_DIR}/*_out.pdbqt 2>/dev/null | wc -l)
+    echo "Results: ${RESULT_COUNT} / ${LIGAND_COUNT}"
+fi
+
+exit ${EXIT_CODE}

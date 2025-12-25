@@ -1,0 +1,109 @@
+#!/bin/bash
+#PBS -N export_results
+#PBS -l select=1:ncpus=48:mem=128gb
+#PBS -l walltime=04:00:00
+#PBS -q long
+#PBS -j oe
+
+# =============================================================================
+# Export Docking Results to Sorted CSV
+# =============================================================================
+#
+# Parses Uni-Dock output files, merges with SMILES data, and exports
+# a sorted CSV ranked by binding affinity.
+#
+# Expected performance: ~5,000 mol/s with 48 cores
+# Memory usage: ~1GB per million results
+#
+# =============================================================================
+
+# ===== CONFIGURATION - MODIFY THESE =====
+PROJECT_DIR="/path/to/your/project"
+RESULTS_DIR="${PROJECT_DIR}/results"
+SMILES_CSV="${PROJECT_DIR}/data/smiles.csv"
+OUTPUT_CSV="${PROJECT_DIR}/outputs/docking_results.csv"
+
+# Optional: Limit to top N results (0 = all)
+TOP_N=0
+
+# Number of parallel workers (match ncpus above)
+NCPUS=48
+
+# Batch size for parallel processing
+BATCH_SIZE=10000
+# ========================================
+
+cd "$PBS_O_WORKDIR"
+
+echo "=============================================="
+echo "Export Docking Results"
+echo "=============================================="
+echo "Start time: $(date)"
+echo "Node: $(hostname)"
+echo "Working dir: $(pwd)"
+echo ""
+echo "Configuration:"
+echo "  Results dir: ${RESULTS_DIR}"
+echo "  SMILES CSV: ${SMILES_CSV}"
+echo "  Output CSV: ${OUTPUT_CSV}"
+echo "  Workers: ${NCPUS}"
+echo "=============================================="
+
+# Validate inputs
+if [ ! -d "${RESULTS_DIR}" ]; then
+    echo "ERROR: Results directory not found: ${RESULTS_DIR}"
+    exit 1
+fi
+
+if [ ! -f "${SMILES_CSV}" ]; then
+    echo "ERROR: SMILES CSV not found: ${SMILES_CSV}"
+    exit 1
+fi
+
+# Count result files
+RESULT_COUNT=$(ls -1 ${RESULTS_DIR}/*_out.pdbqt 2>/dev/null | wc -l)
+echo ""
+echo "Result files to process: ${RESULT_COUNT}"
+echo ""
+
+# Create output directory
+mkdir -p "$(dirname ${OUTPUT_CSV})"
+
+# Build command
+CMD="uv run python scripts/export_results.py \
+    --results-dir ${RESULTS_DIR} \
+    --smiles-csv ${SMILES_CSV} \
+    --output ${OUTPUT_CSV} \
+    --ncpus ${NCPUS} \
+    --batch-size ${BATCH_SIZE}"
+
+if [ ${TOP_N} -gt 0 ]; then
+    CMD="${CMD} --top-n ${TOP_N}"
+fi
+
+echo "Running: ${CMD}"
+echo ""
+
+# Execute
+eval ${CMD}
+EXIT_CODE=$?
+
+echo ""
+echo "=============================================="
+echo "Job Complete"
+echo "=============================================="
+echo "End time: $(date)"
+echo "Exit code: ${EXIT_CODE}"
+
+if [ ${EXIT_CODE} -eq 0 ]; then
+    echo ""
+    echo "Output file:"
+    ls -lh ${OUTPUT_CSV}
+    echo ""
+    echo "Preview (top 10):"
+    head -11 ${OUTPUT_CSV}
+    echo ""
+    echo "Total rows: $(wc -l < ${OUTPUT_CSV})"
+fi
+
+exit ${EXIT_CODE}

@@ -1,19 +1,16 @@
-# Data files
-*.tgz
-*.pdbqt
-*.csv
-*.smi
-*.gz
-
-# Data directories
-zinc22/
+# Generated datasets and raw screening outputs
 data/
 outputs/
+results/
 logs/
+ligands/
+checkpoints/
+mlruns*/
 
-# Runtime files
-*.log
-progress.json
+# Large raw artifacts
+*.tgz
+*_out.pdbqt
+*.score
 *.o[0-9]*
 *.e[0-9]*
 
@@ -27,17 +24,15 @@ venv/
 build/
 dist/
 
-# Local configuration (not tracked)
+# Local configuration
 .claude/
 CLAUDE.md
 
-# OS
+# OS and editors
 .DS_Store
 *.swp
 .AppleDouble
 .LSOverride
-
-# IDE
 .vscode/
 .idea/
 *.sublime-*

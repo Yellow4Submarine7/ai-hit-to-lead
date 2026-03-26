@@ -19,24 +19,20 @@
 #
 # =============================================================================
 
-# ===== CONFIGURATION - MODIFY THESE =====
-PROJECT_DIR="/path/to/your/project"
-RECEPTOR="${PROJECT_DIR}/receptor.pdbqt"
-LIGAND_INDEX="${PROJECT_DIR}/data/ligand_list.txt"
-BOX_CONFIG="${PROJECT_DIR}/box_config.txt"
-OUTPUT_DIR="${PROJECT_DIR}/results"
-LOG_FILE="${PROJECT_DIR}/logs/docking.log"
+set -euo pipefail
 
-# Uni-Dock parameters
-NUM_MODES=9
-EXHAUSTIVENESS=8
-SEARCH_MODE="balance"  # balance, fast, or detail
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${RECEPTOR:=${PROJECT_DIR}/receptor.pdbqt}"
+: "${LIGAND_INDEX:=${PROJECT_DIR}/outputs/ligand_files.txt}"
+: "${BOX_CONFIG:=${PROJECT_DIR}/box_config.txt}"
+: "${OUTPUT_DIR:=${PROJECT_DIR}/results}"
+: "${LOG_FILE:=${PROJECT_DIR}/logs/docking.log}"
+: "${NUM_MODES:=9}"
+: "${EXHAUSTIVENESS:=8}"
+: "${SEARCH_MODE:=balance}"
+: "${PROGRESS_INTERVAL:=60}"
 
-# Progress reporting interval (seconds)
-PROGRESS_INTERVAL=60
-# ========================================
-
-cd "$PBS_O_WORKDIR"
+cd "$PROJECT_DIR"
 
 echo "=============================================="
 echo "Uni-Dock GPU Docking Job"

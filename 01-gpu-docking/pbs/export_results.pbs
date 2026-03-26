@@ -17,23 +17,19 @@
 #
 # =============================================================================
 
-# ===== CONFIGURATION - MODIFY THESE =====
-PROJECT_DIR="/path/to/your/project"
-RESULTS_DIR="${PROJECT_DIR}/results"
-SMILES_CSV="${PROJECT_DIR}/data/smiles.csv"
-OUTPUT_CSV="${PROJECT_DIR}/outputs/docking_results.csv"
+set -euo pipefail
 
-# Optional: Limit to top N results (0 = all)
-TOP_N=0
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${RESULTS_DIR:=${PROJECT_DIR}/results}"
+: "${SMILES_CSV:=${PROJECT_DIR}/../00-data-extraction/outputs/zinc22_smiles.csv}"
+: "${INPUT_CSV:=${SMILES_CSV}}"
+: "${OUTPUT_CSV:=${PROJECT_DIR}/outputs/shortlist.csv}"
+: "${MANIFEST_OUTPUT:=${PROJECT_DIR}/outputs/shortlist_manifest.txt}"
+: "${TOP_N:=0}"
+: "${NCPUS:=48}"
+: "${BATCH_SIZE:=10000}"
 
-# Number of parallel workers (match ncpus above)
-NCPUS=48
-
-# Batch size for parallel processing
-BATCH_SIZE=10000
-# ========================================
-
-cd "$PBS_O_WORKDIR"
+cd "$PROJECT_DIR"
 
 echo "=============================================="
 echo "Export Docking Results"
@@ -46,6 +42,7 @@ echo "Configuration:"
 echo "  Results dir: ${RESULTS_DIR}"
 echo "  SMILES CSV: ${SMILES_CSV}"
 echo "  Output CSV: ${OUTPUT_CSV}"
+echo "  Manifest: ${MANIFEST_OUTPUT}"
 echo "  Workers: ${NCPUS}"
 echo "=============================================="
 
@@ -73,7 +70,9 @@ mkdir -p "$(dirname ${OUTPUT_CSV})"
 CMD="uv run python scripts/export_results.py \
     --results-dir ${RESULTS_DIR} \
     --smiles-csv ${SMILES_CSV} \
+    --input-csv ${INPUT_CSV} \
     --output ${OUTPUT_CSV} \
+    --manifest-output ${MANIFEST_OUTPUT} \
     --ncpus ${NCPUS} \
     --batch-size ${BATCH_SIZE}"
 

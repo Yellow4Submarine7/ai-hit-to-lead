@@ -6,10 +6,14 @@
 #PBS -j oe
 #PBS -k oe
 
-# ===== CONFIGURATION - MODIFY THESE =====
-DATASET_NAME="zinc22"
-OUTPUT_CSV="./outputs/${DATASET_NAME}_smiles.csv"
-# ========================================
+set -euo pipefail
+
+: "${DATASET_NAME:=zinc22}"
+: "${INPUT_DIR:=./data}"
+: "${OUTPUT_CSV:=./outputs/${DATASET_NAME}_smiles.csv}"
+: "${ERROR_LOG:=./logs/errors.log}"
+: "${PROGRESS_FILE:=./logs/progress.json}"
+: "${NCPUS:=16}"
 
 cd "$PBS_O_WORKDIR"
 
@@ -18,16 +22,17 @@ echo "Start time: $(date)"
 echo "Hostname: $(hostname)"
 echo "Working directory: $(pwd)"
 echo "Dataset: $DATASET_NAME"
+echo "Input dir: $INPUT_DIR"
 echo "Output: $OUTPUT_CSV"
 echo ""
 
 # CRITICAL: Use uv run for Python execution
 uv run python scripts/extract_smiles_openbabel.py \
-  --input_dir ./data \
+  --input_dir "$INPUT_DIR" \
   --output_csv "$OUTPUT_CSV" \
-  --error_log ./logs/errors.log \
-  --progress_file ./logs/progress.json \
-  --ncpus 16 \
+  --error_log "$ERROR_LOG" \
+  --progress_file "$PROGRESS_FILE" \
+  --ncpus "$NCPUS" \
   --resume
 
 EXIT_CODE=$?

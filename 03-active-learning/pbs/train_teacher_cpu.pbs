@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N train_teacher
+#PBS -l select=1:ncpus=16:mem=32gb
+#PBS -l walltime=24:00:00
+#PBS -q workq
+#PBS -j oe
+
+set -euo pipefail
+
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${EXPERIMENTAL_CSV:=$PROJECT_DIR/data/experimental_processed.csv}"
+: "${CHECKPOINT_OUTPUT:=$PROJECT_DIR/checkpoints/teacher.pkl}"
+: "${METRICS_OUTPUT:=$PROJECT_DIR/results/teacher_metrics.csv}"
+: "${SEEDS:=42,43,44,45,46}"
+
+cd "$PROJECT_DIR"
+
+uv run python scripts/train_teacher.py \
+  --experimental-csv "$EXPERIMENTAL_CSV" \
+  --checkpoint-output "$CHECKPOINT_OUTPUT" \
+  --metrics-output "$METRICS_OUTPUT" \
+  --seeds "$SEEDS"

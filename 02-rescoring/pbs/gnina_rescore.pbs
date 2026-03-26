@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N gnina_rescore
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32gb
+#PBS -l walltime=240:00:00
+#PBS -q gpu-h200
+#PBS -j oe
+
+set -euo pipefail
+
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${SHORTLIST_CSV:=$PROJECT_DIR/outputs/shortlist.csv}"
+: "${RECEPTOR_PATH:=$PROJECT_DIR/receptor/C2_shifted.pdbqt}"
+: "${OUTPUT_DIR:=$PROJECT_DIR/gnina_results}"
+: "${GNINA_PATH:=gnina}"
+
+cd "$PROJECT_DIR"
+
+uv run python scripts/run_gnina_rescoring.py \
+  --shortlist-csv "$SHORTLIST_CSV" \
+  --receptor "$RECEPTOR_PATH" \
+  --output-dir "$OUTPUT_DIR" \
+  --gnina-path "$GNINA_PATH"

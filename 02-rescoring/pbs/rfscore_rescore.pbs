@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N rfscore_rescore
+#PBS -l select=1:ncpus=16:mem=32gb
+#PBS -l walltime=24:00:00
+#PBS -q workq
+#PBS -j oe
+
+set -euo pipefail
+
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${SHORTLIST_CSV:=$PROJECT_DIR/outputs/shortlist.csv}"
+: "${OUTPUT_DIR:=$PROJECT_DIR/rfscore_results}"
+: "${RFSCORE_COMMAND_TEMPLATE:?Set RFSCORE_COMMAND_TEMPLATE before submission}"
+: "${RECEPTOR_PATH:=}"
+
+cd "$PROJECT_DIR"
+
+uv run python scripts/run_rfscore_rescoring.py \
+  --shortlist-csv "$SHORTLIST_CSV" \
+  --output-dir "$OUTPUT_DIR" \
+  --command-template "$RFSCORE_COMMAND_TEMPLATE" \
+  --receptor "$RECEPTOR_PATH"

@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N score_candidates
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32gb
+#PBS -l walltime=240:00:00
+#PBS -q gpu-h200
+#PBS -j oe
+
+set -euo pipefail
+
+: "${PROJECT_DIR:=$PBS_O_WORKDIR}"
+: "${CANDIDATES_CSV:=$PROJECT_DIR/data/candidates.csv}"
+: "${CHECKPOINT_PATH:?Set CHECKPOINT_PATH before submission}"
+: "${RECEPTOR_PATH:?Set RECEPTOR_PATH before submission}"
+: "${OUTPUT_CSV:=$PROJECT_DIR/results/final_ranking.csv}"
+
+cd "$PROJECT_DIR"
+
+uv run python scripts/score_candidates.py \
+  --candidates-csv "$CANDIDATES_CSV" \
+  --checkpoint "$CHECKPOINT_PATH" \
+  --receptor-path "$RECEPTOR_PATH" \
+  --output "$OUTPUT_CSV"
